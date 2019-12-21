@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="stylesheet" href="/static/css/bootstrap.min.css" crossorigin="anonymous">
+
+        <title>Сириус</title>
+
+        <style>
+        body {
+            padding-top: 5rem;
+        }
+        </style>
+    </head>
+    <body>
+        <main role="main" class="container">
+            <div id="the-starter">
+                <h1>Привет, Сириус!</h1>
+                <p class="lead">Минималистичный коллаборативный текстовый редактор с синхронизацией в реальном времени.</p>
+            </div>
+            <div id="the-integration" class="container">
+                <div class="row">
+                    <form class="col">
+                        <div class="form-group">
+                            <textarea id="integration-textarea" class="form-control text-monospace" rows="12"></textarea>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <script src="/static/js/jquery-3.4.1.slim.min.js" crossorigin="anonymous"></script>
+        <script src="/static/js//popper.min.js" crossorigin="anonymous"></script>
+        <script src="/static/js/bootstrap.min.js" crossorigin="anonymous"></script>
+
+        <script src="/j/editlist" crossorigin="anonymous"></script>
+        <script src="/j/treedoc" crossorigin="anonymous"></script>
+
+        <script>
+        // Этот файл также использует код из
+        // - templates/j_editlist.js (четвертый шаг)
+        // - templates/j_treedoc.js (пятый шаг)
+
+        //------------------------------------------------
+        // !!!!! vvvvv vvvvv vvvvv vvvvv vvvvv vvvvv vvvvv
+        //
+        // TODO(sandello): Соберите воедино результаты работы с третьего шага и шестого шага.
+        //
+        // Вам нужно:
+        // - создать в JS модель документа;
+        // - наладить синхронизацию текстового поля с моделью;
+        //   - для этого необходимо добавить обработчик `$(...).on("input", function() { ... })`,
+        //     который будет вызываться при изменении содержимого поля;
+        //   - получить содержимое поле можно через `$(...).val()`;
+        // - (два пункта выше были сделаны в шестом шаге, но чуть по-другому скомпонованы);
+        // - наладить синхронизацию данных между браузерам;
+        //   - для этого необходимо установить соединение;
+        //   - после шага синхронизации поля с моделью необходимо отправить состояние другим браузерам;
+        //   - при получении состояния от другого браузера нужно обновить модель;
+        //   - и обновить текстовое поле: `$(...).val("Hello!")` установит содержимое поля в "Hello!";
+        // - (код общения через сервер можно взять с первого-третьего шагов);
+        // - (тесты на функции public_serializeState, public_mergeWithSerializedState есть в шестом шаге);
+        //
+        // Больше кода в данном файле нет.
+        // 
+        // Попробуйте собрать итоговое решение самостоятельно.
+        //
+        // Удачи!
+
+        /* about::fucntionity() -> {
+            creation -> functions of gathering users interactions, update document
+            sending ->  serialization of document, send txt state function
+            recieving -> merging document data with new, update text field
+        }
+        */
+        /*  helloworld.cpp
+        #include <iostream>
+        #include <vector>
+        
+        using namespace std;
+
+        int main() {
+            int a, b;
+            cin >> a >> b;
+            cout << a + b;
+            cout << "hello";
+            return 0;
+        }
+        */
+
+        function debounce(func, wait, immediate) {
+            var timeout;
+            return function() {
+                var context = this, args = arguments;
+                var later = function() {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) func.apply(context, args);
+            };
+        };
+        
+        var url = "ws://" + document.domain + ":" + location.port + "/ws";
+        var ws = new WebSocket(url);
+        //var ws = new WebSocket("ws://104.248.26.149:5000/ws");
+
+        let localDoc = public_newDocument();
+
+        var startIndex;
+        var startPosition;
+        var endIndex;
+        var endPosition;
+
+        function updateLocalDocument(newContent) {
+            var prev = public_getContent(localDoc);
+            var chng = editList(prev, newContent);
+            chng.forEach(function(val, ind, me) {
+                if (val.type == 'I') {
+                    public_insertAfter(localDoc, val.pos - 1, val.symbol);
+                }
+                else if (val.type == 'D') {
+                    public_remove(localDoc, val.pos);
+                }
+                //console.log(public_getContent(localDoc));
+            });
+            // console.log(localDoc);
+            // if (newContent != $("#integration-textarea").val()) {
+            //     console.log("Error 1");
+            // }
+            // if (public_getContent(localDoc) != $("#integration-textarea").val()) {
+            //     console.log("Error 2");
+            // }
+            // console.log("Value Length After Update: " + $("#integration-textarea").val().length);
+        }
+
+        function send() {
+            //console.log("sending document info");
+            ws.send(public_serializeState(localDoc));
+        }
+
+        // function dbgSelectionRange(name, fn) {
+        //     var start1 = $("#integration-textarea").prop("selectionStart");
+        //     var end1 = $("#integration-textarea").prop("selectionEnd");
+
+        //     fn();
+
+        //     var start2 = $("#integration-textarea").prop("selectionStart");
+        //     var end2 = $("#integration-textarea").prop("selectionEnd");
+
+        //     var changed = start1 != start2 && end1 != end2;
+        //     console.log("[cursor] " + name +":  (" + start1 + ", " + end1 + ") -> (" + start2 + ", " + end2 + ")" + (changed ? " *** " : ""));
+        // }
+
+        function get(state) {
+            startIndex = $("#integration-textarea").prop("selectionStart");
+            startPosition = _getPositionByIndex(localDoc, startIndex);
+            endIndex = $("#integration-textarea").prop("selectionEnd");
+            endPosition = _getPositionByIndex(localDoc, endIndex);
+            // console.log("Cursor before update", startIndex, endIndex);
+
+            // console.log("got new state of document", state)
+            // var contentBefore = public_getContent(localDoc);
+            public_mergeWithSerializedState(localDoc, state);
+            // var contentAfter = public_getContent(localDoc);
+            // if (contentBefore != contentAfter) {
+            //     console.log("*** Content Differs");
+            // }
+            // var valueBefore = $("#integration-textarea").val();
+            // console.log("Value Length Before Merge: " + $("#integration-textarea").val().length);
+            // $("#integration-textarea").val(public_getContent(localDoc));
+            // console.log("Value Length After Merge: " + $("#integration-textarea").val().length);
+            // var valueAfter = $("#integration-textarea").val();
+            // if (valueBefore != valueAfter) {
+            //     console.log("*** Value Differs");
+            // }
+            collapseChanges();
+
+            startIndex = _getIndexByPosition(localDoc, startPosition);
+            endIndex = _getIndexByPosition(localDoc, endPosition);
+            //console.log("Cursor after update", startIndex, endIndex);
+            
+            $("#integration-textarea").val(public_getContent(localDoc));
+            $("#integration-textarea").get()[0].setSelectionRange(startIndex, endIndex);
+        }
+
+        let collapseChanges = debounce(function() {
+            console.log("COLLAPSING CHANGES.")
+            public_collapseChanges(localDoc);
+            console.log(localDoc);
+        }, 4000);
+
+        ws.onmessage = function(event) {
+            var mes = event.data;
+            // dbgSelectionRange("OnMessage", () => {
+            updateLocalDocument($("#integration-textarea").val());
+            get(mes);
+            // });
+        }
+
+        $("#integration-textarea").on("input", debounce(function (event) {
+            // можно проверить, что startPosition <= endPosition
+
+            //console.log("updating local document");
+            // dbgSelectionRange("OnInput", () => {
+            updateLocalDocument($("#integration-textarea").val());
+            send();
+            // });
+            //console.log("end update");
+        }, 1));
+
+        // setTimeout(function() {
+        //     var s = '[[["1","a"],["2","a"],["3","a"],["4","a"],["5","a"],["6","a"],["7","a"],["8","a"],["9","a"],["10","a"],["11","a"],["12","a"],["13","a"],["14","a"],["15","a"],["16","a"],["17","a"],["18","a"],["19","a"],["20","a"],["21","a"],["22","a"],["23","a"],["24","a"],["25","a"],["26","a"],["27","a"],["28","a"],["29","a"]],["29","28","27","26","25","24","23","22","21","20","19","18","17","16"]]';
+        //     get(s);
+        //     console.log("UPD");
+
+        //     var len = public_getContent(localDoc).length;
+        //     for (var i = 0; i < len; ++i) {
+        //         console.log("Index " + i);
+        //         var p = _getPositionByIndex(localDoc, i);
+        //         var j = _getIndexByPosition(localDoc, p);
+        //         if (i != j) {
+        //             console.log("Error: " + i + " != " + j);
+        //         }
+        //     }
+
+        // }, 100);
+        // !!!!! ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^
+        //------------------------------------------------
+        </script>
+  </body>
+</html>
