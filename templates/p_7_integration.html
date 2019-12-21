@@ -23,7 +23,7 @@
                 <div class="row">
                     <form class="col">
                         <div class="form-group">
-                            <textarea id="integration-textarea" class="form-control" rows="12"></textarea>
+                            <textarea id="integration-textarea" class="form-control text-monospace" rows="12"></textarea>
                         </div>
                     </form>
                 </div>
@@ -125,34 +125,65 @@
                 else if (val.type == 'D') {
                     public_remove(localDoc, val.pos);
                 }
-                console.log(public_getContent(localDoc));
-                
+                //console.log(public_getContent(localDoc));
             });
-            console.log(localDoc);
-            send();
+            // console.log(localDoc);
+            // if (newContent != $("#integration-textarea").val()) {
+            //     console.log("Error 1");
+            // }
+            // if (public_getContent(localDoc) != $("#integration-textarea").val()) {
+            //     console.log("Error 2");
+            // }
+            // console.log("Value Length After Update: " + $("#integration-textarea").val().length);
         }
 
         function send() {
-            console.log("sendint document info");
+            //console.log("sending document info");
             ws.send(public_serializeState(localDoc));
         }
 
-        function get(state) {
-            console.log("updating cursor", startIndex, endIndex);
-            startIndex = $("#integration-textarea").prop("selectionStart") - 1;
-            startPosition = _getPositionByIndex(localDoc, startIndex);
-            endIndex = $("#integration-textarea").prop("selectionEnd") - 1;
-            endPosition = _getPositionByIndex(localDoc, endIndex);
+        // function dbgSelectionRange(name, fn) {
+        //     var start1 = $("#integration-textarea").prop("selectionStart");
+        //     var end1 = $("#integration-textarea").prop("selectionEnd");
 
-            console.log("got new state of document", state)
+        //     fn();
+
+        //     var start2 = $("#integration-textarea").prop("selectionStart");
+        //     var end2 = $("#integration-textarea").prop("selectionEnd");
+
+        //     var changed = start1 != start2 && end1 != end2;
+        //     console.log("[cursor] " + name +":  (" + start1 + ", " + end1 + ") -> (" + start2 + ", " + end2 + ")" + (changed ? " *** " : ""));
+        // }
+
+        function get(state) {
+            startIndex = $("#integration-textarea").prop("selectionStart");
+            startPosition = _getPositionByIndex(localDoc, startIndex);
+            endIndex = $("#integration-textarea").prop("selectionEnd");
+            endPosition = _getPositionByIndex(localDoc, endIndex);
+            // console.log("Cursor before update", startIndex, endIndex);
+
+            // console.log("got new state of document", state)
+            // var contentBefore = public_getContent(localDoc);
             public_mergeWithSerializedState(localDoc, state);
-            $("#integration-textarea").val(public_getContent(localDoc));
+            // var contentAfter = public_getContent(localDoc);
+            // if (contentBefore != contentAfter) {
+            //     console.log("*** Content Differs");
+            // }
+            // var valueBefore = $("#integration-textarea").val();
+            // console.log("Value Length Before Merge: " + $("#integration-textarea").val().length);
+            // $("#integration-textarea").val(public_getContent(localDoc));
+            // console.log("Value Length After Merge: " + $("#integration-textarea").val().length);
+            // var valueAfter = $("#integration-textarea").val();
+            // if (valueBefore != valueAfter) {
+            //     console.log("*** Value Differs");
+            // }
             collapseChanges();
 
-            startIndex = _getIndexByPosition(localDoc, startPosition) + 1;
-            endIndex = _getIndexByPosition(localDoc, endPosition) + 1;
-            console.log("cursor index", startIndex, endIndex);
-
+            startIndex = _getIndexByPosition(localDoc, startPosition);
+            endIndex = _getIndexByPosition(localDoc, endPosition);
+            //console.log("Cursor after update", startIndex, endIndex);
+            
+            $("#integration-textarea").val(public_getContent(localDoc));
             $("#integration-textarea").get()[0].setSelectionRange(startIndex, endIndex);
         }
 
@@ -164,16 +195,39 @@
 
         ws.onmessage = function(event) {
             var mes = event.data;
+            // dbgSelectionRange("OnMessage", () => {
+            updateLocalDocument($("#integration-textarea").val());
             get(mes);
+            // });
         }
 
         $("#integration-textarea").on("input", debounce(function (event) {
             // можно проверить, что startPosition <= endPosition
 
-            console.log("updating local document");
+            //console.log("updating local document");
+            // dbgSelectionRange("OnInput", () => {
             updateLocalDocument($("#integration-textarea").val());
+            send();
+            // });
+            //console.log("end update");
         }, 1));
 
+        // setTimeout(function() {
+        //     var s = '[[["1","a"],["2","a"],["3","a"],["4","a"],["5","a"],["6","a"],["7","a"],["8","a"],["9","a"],["10","a"],["11","a"],["12","a"],["13","a"],["14","a"],["15","a"],["16","a"],["17","a"],["18","a"],["19","a"],["20","a"],["21","a"],["22","a"],["23","a"],["24","a"],["25","a"],["26","a"],["27","a"],["28","a"],["29","a"]],["29","28","27","26","25","24","23","22","21","20","19","18","17","16"]]';
+        //     get(s);
+        //     console.log("UPD");
+
+        //     var len = public_getContent(localDoc).length;
+        //     for (var i = 0; i < len; ++i) {
+        //         console.log("Index " + i);
+        //         var p = _getPositionByIndex(localDoc, i);
+        //         var j = _getIndexByPosition(localDoc, p);
+        //         if (i != j) {
+        //             console.log("Error: " + i + " != " + j);
+        //         }
+        //     }
+
+        // }, 100);
         // !!!!! ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^
         //------------------------------------------------
         </script>

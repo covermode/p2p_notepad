@@ -320,7 +320,7 @@ function _allocateRight(document, begin, end) {
 
 // Вставить символ в указанную позицию (не индекс!).
 function _applyInsert(document, position, symbol) {
-    console.log('insert:', position, symbol);
+    // console.log('insert:', position, symbol);
     map_set(document.insert, position, symbol);
 }
 
