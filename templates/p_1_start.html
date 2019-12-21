@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="stylesheet" href="/static/css/bootstrap.min.css" crossorigin="anonymous">
+
+        <title>Сириус</title>
+    
+        <style>
+        body {
+            padding-top: 5rem;
+        }
+        </style>
+    </head>
+    <body>
+        <main role="main" class="container">
+            <div id="the-starter">
+                <h1>Привет, Сириус!</h1>
+                <p class="lead">Это – начало проектной работы.</p>
+                <p class="lead">
+                    <button type="button" class="btn btn-primary" id="the-button">Отправить сообщение серверу</button>
+                </p>
+            </div>
+            <div id="the-show">
+                <hr />
+            </div>
+        </main>
+
+        <script src="/static/js/jquery-3.4.1.slim.min.js" crossorigin="anonymous"></script>
+        <script src="/static/js//popper.min.js" crossorigin="anonymous"></script>
+        <script src="/static/js/bootstrap.min.js" crossorigin="anonymous"></script>
+
+            <script>
+        // Определяем имя пользователя. Оно нам понадобится далее.
+        var username = "neo";
+
+        // Вспомогательная функция. Выводит на страницу строку-запись с маркером (tag) и текстом (text).
+        function showToUser(tag, text) {
+            // Составляем верстку из p (paragraph), вложенного span и вложенного текста.
+            // Для красоты используются классы из Bootstrap.
+            // https://getbootstrap.com/docs/4.4/utilities/colors/
+            // https://getbootstrap.com/docs/4.4/components/badge/
+            var classes = 'p-3 mb-2';
+            if (tag == 'INFO') {
+                classes += ' bg-info text-white';
+            }
+            $("#the-show").append(
+                '<p class="' + classes + '">' + /* Контейнер */
+                '<span class="badge badge-secondary mr-2">' + tag + '</span>' + /* Бейджик */
+                text + /* Текст */
+                '</p>' /* Конец контейнера */);
+        }
+
+        // Общение между браузером и сервером происходит через технологию WebSocket.
+        //
+        // Технология позволяет общаться путем передачи сообщений в обе стороны:
+        // от браузера к серверу и от сервера к браузеру.
+        //
+        // Техническая документация доступна по ссылке:
+        // https://developer.mozilla.org/ru/docs/WebSockets
+
+        // Устанавливаем соединение сервером.
+        var url = "ws://" + document.domain + ":" + location.port + "/ws";
+        var ws = new WebSocket(url);
+
+        // Функция-обработчик при возникновении ошибки соединения.
+        ws.onerror = function(event) {
+            console.log("WebSocket: Произошла ошибка.", event);
+            showToUser('INFO', 'Возникла ошибка при работе с <small>' + url + '</small>:' + event);
+        };
+
+        // Функция-обработчик при закрытия соединения.
+        ws.onclose = function(event) {
+            console.log("WebSocket: Соединение разорвано.", event);
+            showToUser('INFO', 'Соединение с <small>' + url + '</small> разорвано.');
+        }
+
+        // Функция-обработчик при получении нового сообщения.
+        ws.onmessage = function(event) {
+            console.log("WebSocket: Получили сообщение от сервера.");
+            console.log(">> " + event.data);
+            showToUser('RECV', event.data);
+        };
+
+        // Функция-обработчик при установке соединения.
+        ws.onopen = function(event) {
+            console.log("WebSocket: Установили соединение с сервером.");
+            showToUser('INFO', 'Соединение с <small>' + url + '</small> установлено.');
+
+            // (!!!) Отправляем серверу наше имя сразу после установки соединения.
+            console.log("WebSocket: Отправляем первое сообщение серверу.");
+            ws.send(username);
+
+            // (!!!) Добавляем обработку нажатия кнопки.
+            // Конструкция $(..1..).click(function() { ..2.. }) устанавливает для элементов интерфейса,
+            // указанных в "..1..", обработку нажатия в "..2..".
+            // Элемент с id="the-button" (см. выше соответствующий HTML-тег с соответствующим атрибутом id)
+            // задается через селектор "#the-button" (решетка перед идентификатором указывает,
+            // что элемент интерфейса нужно искать по идентификатору).
+            $("#the-button").click(function() {
+                console.log("WebSocket: Отправляем новое сообщение серверу из-за нажатия кнопки.");
+                ws.send(username);
+            })
+        };
+
+        console.log("Начали работу!");
+
+        // TODO(sandello): Упражнение на JavaScript.
+        //
+        // Напишите функцию, которая будет генерировать простое, читаемое,
+        // но уникальное имя пользователя. Для этого заведите массив названий животных,
+        // и при генерации имени выбирайте случайное животное и дописывайте случайное число
+        // от 1000 до 10000.
+        // 
+        // Вам может быть полезна документация по Math.random:
+        // https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+        </script>
+    </body>
+</html>

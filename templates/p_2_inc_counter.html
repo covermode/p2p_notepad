@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="stylesheet" href="/static/css/bootstrap.min.css" crossorigin="anonymous">
+
+        <title>Сириус</title>
+    
+        <style>
+        body {
+            padding-top: 5rem;
+        }
+        </style>
+    </head>
+    <body>
+        <main role="main" class="container">
+            <div id="the-starter">
+                <h1>Привет, Сириус!</h1>
+                <p class="lead">Делаем монотонный счетчик.</p>
+            </div>
+            <!-- Новая верстка начинается здесь. -->
+            <div id="the-counter">
+                <!-- Текстовый параграф counter-value мы будем использовать, чтобы вывести значение счетчика. -->
+                <p id="counter-value" class="lead"></p>
+                <!-- Кнопки управления счетчиком. -->
+                <div class="btn-group">
+                    <button id="increment-button" type="button" class="btn btn-primary">Увеличить счетчик</button>
+                    <button id="start-test-button" type="button" class="btn btn-secondary">Накликать +100 за 10 секунд для теста</button>
+                    <button id="stop-test-button" type="button" class="btn btn-secondary">Остановить тест</button>
+                </div>
+            </div>
+            <!-- Новая верстка заканчивается здесь. -->
+            <div id="the-show">
+                <hr />
+            </div>
+        </main>
+
+        <script src="/static/js/jquery-3.4.1.slim.min.js" crossorigin="anonymous"></script>
+        <script src="/static/js//popper.min.js" crossorigin="anonymous"></script>
+        <script src="/static/js/bootstrap.min.js" crossorigin="anonymous"></script>
+
+            <script>
+        // Вспомогательная функция с первого шага.
+        function showToUser(tag, text) {
+            // Составляем верстку из p (paragraph), вложенного span и вложенного текста.
+            // Для красоты используются классы из Bootstrap.
+            // https://getbootstrap.com/docs/4.4/utilities/colors/
+            // https://getbootstrap.com/docs/4.4/components/badge/
+            var classes = 'p-3 mb-2';
+            if (tag == 'INFO') {
+                classes += ' bg-info text-white';
+            }
+            $("#the-show").append(
+                '<p class="' + classes + '">' + /* Контейнер */
+                '<span class="badge badge-secondary mr-2">' + tag + '</span>' + /* Бейджик */
+                text + /* Текст */
+                '</p>' /* Конец контейнера */);
+        }
+
+        // Общение между браузером и сервером происходит через технологию WebSocket.
+        // За подробными комментариями см. код первого шага.
+        var url = "ws://" + document.domain + ":" + location.port + "/ws";
+        var ws = new WebSocket(url);
+
+        ws.onerror = function(event) {
+            console.log("WebSocket: Произошла ошибка.", event);
+            showToUser('INFO', 'Возникла ошибка при работе с <small>' + url + '</small>:' + event);
+        };
+
+        ws.onclose = function(event) {
+            console.log("WebSocket: Соединение разорвано.", event);
+            showToUser('INFO', 'Соединение с <small>' + url + '</small> разорвано.');
+        }
+
+        ws.onmessage = function(event) {
+            //------------------------------------------------
+            // !!!!! vvvvv vvvvv vvvvv vvvvv vvvvv vvvvv vvvvv
+            //
+            // TODO(sandello): Напишите код, который обрабатывает полученное сообщение.
+
+            // ... f(event.data) ...
+
+            // !!!!! ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^
+            //------------------------------------------------
+        };
+
+        ws.onopen = function(event) {
+            console.log("WebSocket: Установили соединение с сервером.");
+            showToUser('INFO', 'Соединение с <small>' + url + '</small> установлено.');
+
+            //------------------------------------------------
+            // !!!!! vvvvv vvvvv vvvvv vvvvv vvvvv vvvvv vvvvv
+            //
+            // TODO: Напишите реализацию операции увеличения счетчика.
+            //
+            // Используйте функцию ws.send(...) для отправки данных на сервер.
+            // Сервер будет выполнять широковещательную функцию и транслировать данные всем другим браузерам.
+            // Полученные от сервера сообщения необходимо обработать в функции ws.onmessage выше.
+            //
+            // Справка:
+            //   1. "#increment-button" -- селектор кнопки с id="increment-button".
+            //      "#counter-value" -- селектор абзаца с id="counter-value".
+            //      Выражение $(...) ищет на странице указанный элемент.
+            //      Таким образом, $("#increment-button") дает нам доступ к кнопке увеличения счетчика.
+            //      Технически работа идет через библиотеку jQuery.
+            //   2. Выражение $(...).click(function(event) { ... }) устанавливает функцию-обработчик
+            //      нажатия на элемент.
+            //      Выражение $(...).click() (без указания функции) эмулирует нажатие на элемент.
+            //   3. Можно использовать структуру данных Set для моделирования множества.
+            //      При этом обратите внимание, что множество нельзя так просто сериализовать в JSON,
+            //      так как множество -- сложный объект.
+            //      Можно множество сериализовать в JSON через временный массив:
+            //        var s = new Set(); s.add(1); s.add(2); s.add(3);
+            //        var a = [];
+            //        s.forEach(function(x) { a.push(x); });
+            //        JSON.stringify(a);
+            //   4. Для отладки удобно печатать что-нибудь к JS-консоль через console.log.
+            //
+            // Ссылки:
+            // - Документация по jQuery: https://api.jquery.com
+            // - Set (множество): https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Set
+            // - JSON.stringify: https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
+            // - JSON.parse: https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse
+            // - console.log: https://developer.mozilla.org/ru/docs/Web/API/Console/log
+            
+            // Устанавливаем обработчик нажатия на кнопку увеличения счетчика.
+            $("#increment-button").click(function(event) {
+                // Данная строка технически нужна для отмены стандартного поведения браузера при нажатии на кнопку.
+                event.preventDefault();
+
+                // Последующие строки кода приведены для примера.
+                // Отправляем сообщение на сервер.
+                ws.send("Клац-клац!");
+                // Обновляем текст на странице.
+                $("#counter-value").text("Значение счетчика тайной покрыто.");
+            });
+
+            // !!!!! ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^
+            //------------------------------------------------
+
+            // Ниже расположен тестирующий код.
+            //
+            // Тестирование устроено следующим образом: будем эмулировать нажатие
+            // на кнопку увеличение счетчика. Всего нам нужно сделать 100 нажатий.
+            // После каждого нажатия будем делать небольшую паузу.
+            var testState = {counter: 0, iterations: 0, millis: 0, handle: null};
+            var testStart = function() {
+                testState.counter = 0;
+                testState.iterations = 100;
+                testState.millis = 1000;
+                testState.handle = setTimeout(testStep, 0);
+                testRender();
+            }
+            var testStop = function() {
+                clearTimeout(testState.handle);
+                testState.counter = 0;
+                testState.iterations = 0;
+                testState.millis = 0;
+                testState.handle = null;
+                testRender();
+            }
+            var testStep = function() {
+                if (testState.counter < testState.iterations) {
+                    console.log("Нажимаем на кнопку " + testState.counter + "-й раз!");
+                    $("#increment-button").click();
+                    let delay = 2.0 * Math.random() * (testState.millis / testState.iterations);
+                    testState.counter++;
+                    testState.handle = setTimeout(testStep, delay);
+                } else {
+                    console.log("Тестирование закончено!")
+                    testState.handle = setTimeout(testStop, 0);
+                }
+                testRender();
+            };
+            var testRender = function() {
+                let flag = (testState.counter < testState.iterations);
+                $("#start-test-button").attr("disabled", flag);
+                $("#stop-test-button").attr("disabled", !flag);
+            };
+            $("#start-test-button").click(function() {
+                console.log("Начинаем тестирование.");
+                testStart();
+            });
+            $("#stop-test-button").click(function() {
+                console.log("Останавливаем тестирование.");
+                testStop();
+            });
+            testStop();
+        };
+
+        console.log("Начали работу!");
+        </script>
+    </body>
+</html>

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="stylesheet" href="/static/css/bootstrap.min.css" crossorigin="anonymous">
+
+        <title>Сириус</title>
+
+        <style>
+        body {
+            padding-top: 5rem;
+        }
+        </style>
+    </head>
+    <body>
+        <main role="main" class="container">
+            <div id="the-starter">
+                <h1>Привет, Сириус!</h1>
+                <p class="lead">Связываем текстовое поле и модель документа.</p>
+            </div>
+            <div id="the-textarea" class="container">
+                <div class="row">
+                    <div class="col">
+                        <h6 class="font-weight-light">Текстовое поле</h6>
+                    </div>
+                    <div class="col">
+                        <h6 class="font-weight-light">Модель</h6>
+                    </div>
+                </div>
+                <div class="row">
+                    <form class="col">
+                        <div class="form-group">
+                            <textarea id="integration-textarea" class="form-control" rows="8"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <button id="integration-submit" type="submit" class="btn btn-primary mb-2">Перенести в модель</button>
+                        </div>
+                    </form>
+                    <div class="col border-danger" id="integration-document">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <h6 class="font-weight-light">Список правок</h6>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col" id="integration-editlist"></div>
+                </div>
+            </div>
+        </main>
+
+        <script src="/static/js/jquery-3.4.1.slim.min.js" crossorigin="anonymous"></script>
+        <script src="/static/js//popper.min.js" crossorigin="anonymous"></script>
+        <script src="/static/js/bootstrap.min.js" crossorigin="anonymous"></script>
+
+        <script src="/j/editlist" crossorigin="anonymous"></script>
+        <script src="/j/treedoc" crossorigin="anonymous"></script>
+
+        <script>
+        // Этот файл также использует код из
+        // - templates/j_editlist.js (четвертый шаг)
+        // - templates/j_treedoc.js (пятый шаг)
+
+        //------------------------------------------------
+        // !!!!! vvvvv vvvvv vvvvv vvvvv vvvvv vvvvv vvvvv
+        //
+        // TODO(sandello): Обновлять модель документа до содержимого текстового поля.
+        //
+        // В этом шаге надо решить следующую задачу: когда пользователь правит содержимое
+        // текстового поля ввода, то нужно обновлять через методы public_* модель документа,
+        // чтобы её содержимое соответствовало текстовому полю.
+        //
+        // Для это предлагается сделать такую логику:
+        //   - когда содержимое поля меняется, вычисляем список правок между полем и моделью,
+        //   - последовательно применяем данные правки к модели.
+        //
+        // Если в ходе состыковки текстового поля и модели документа вы будете находить ошибки
+        // в модели документа, то дописывайте тесты в файл пятого шага для отладки.
+
+        // Заводим модель.
+        let localDocument = public_newDocument();
+        // Реализуем обновление.
+        function updateLocalDocument(newContent) {
+            var prev = public_getContent(localDocument);
+            var chng = editList(prev, newContent);
+            chng.forEach(function(val, ind, me) {
+                if (val.type == 'I') {
+                    public_insertAfter(localDocument, val.pos - 1, val.symbol);
+                }
+                else if (val.type == 'D') {
+                    public_remove(localDocument, val.pos);
+                }
+                console.log(public_getContent(localDocument));
+                
+            });
+            console.log(localDocument);
+            // TODO: Напиши меня!
+            // Нужно взять из localDocument текстовое содержимое через public_getContent,
+            // посчитать список правок между oldContent и newContent,
+            // применить правки к документу.
+        }
+
+        // Также полезно посмотреть, как вызывается функция updateLocalDocument.
+        //
+        // $("#integration-submit").click(function(event) {
+        //   event.preventDefault();
+        //   updateLocalDocument($("#integration-textarea").val());
+        // });
+        //
+        // (Реальный код вызова в этом файле чуть более сложный: включен код отрисовки ошибок.)
+
+        // !!!!! ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^ ^^^^^
+        //------------------------------------------------
+
+        // Ниже расположен тестирующий код.
+        function escape(s) {
+            return $(document.createElement("pre")).text(s).html();
+        }
+
+        function render(sidesMustMatch) {
+            let documentHtml = null;
+            let editlistHtml = null;
+
+            let left, right;
+            try {
+                left = public_getContent(localDocument);
+                right = $("#integration-textarea").val();
+                documentHtml = '<samp>' + escape(left) + '</samp>';
+            } catch (ex) {
+                documentHtml = '<div class="alert alert-danger">Ошибка при получении содержимого документа.</div>';
+                console.error("Ошибка при получении содержимого документа.", ex);
+            }
+
+            let diff;
+            try {
+                if (typeof(left) !== "string") {
+                    throw new Error("Левый аргумент editList -- не строка!");
+                }
+                if (typeof(right) !== "string") {
+                    throw new Error("Правый аргумент editList -- не строка!");
+                }
+                diff = editList(left, right);
+                editlistHtml = '<pre class="border p-3">' + escape(JSON.stringify(diff, null, 2)) + '</pre>';
+            } catch (ex) {
+                editlistHtml = '<div class="alert alert-danger">Ошибка при вычислении списка правок.</div>';
+                console.error("Ошибка при вычислении списка правок.", ex);
+            }
+
+            if (sidesMustMatch) {
+                if (left !== right) {
+                    documentHtml += '<div class="alert alert-danger">Поле и модель не совпадают.</div>'
+                } else {
+                    documentHtml += '<div class="alert alert-success">Поле и модель совпадают!</div>'
+                }
+            }
+
+            $("#integration-document").html(documentHtml);
+            $("#integration-editlist").html(editlistHtml);
+        }
+
+        $("#integration-textarea").on("input", function() { render(false); });
+        $("#integration-submit").click(function(event) {
+            event.preventDefault();
+            try {
+                updateLocalDocument($("#integration-textarea").val());
+                render(true);
+            } catch (ex) {
+                $("#integration-document").html('<div class="alert alert-danger">Ошибка при обновлении документа.</div>');
+                console.error("Ошибка при обновлении документа.", ex);
+            }
+        });
+        </script>
+  </body>
+</html>
