@@ -38,7 +38,38 @@ function resCmp(a, b) {
     return b.pos - a.pos;
 }
 
+function substr(str, l, r) {
+    if (l > r) l = r;
+    return str.substring(l, r);
+}
+
+function crop(a, b) {
+    var l = 0, r = 0;
+    for (var i = 0; ; i++) {
+        if (l >= Math.min(a.length, b.length) - r || (a[l] != b[l] && a[a.length - r - 1] != b[b.length - r - 1])) {
+            break;
+        }
+        if (i % 2 == 0 && a[l] == b[l]) {
+            l++;
+        }
+        if (i % 2 == 1 && a[a.length - r - 1] == b[b.length - r - 1]) {
+            r++;
+        }
+    }
+    return [l, r];
+}
+
 function editList(left, right) {
+    var [l, r] = crop(left, right);
+    var res = editListCore(substr(left, l, left.length), substr(right, l, right.length))
+    res.forEach((elem, ind, th) => {
+        th[ind].pos += l;
+    });
+    return res;
+}
+
+function editListCore(left, right) {
+    // console.log("edit list core args: ", left, right);
     var inf = 1e9;
     var dp = [];
     var p = [];
