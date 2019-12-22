@@ -195,10 +195,18 @@
 
         ws.onmessage = function(event) {
             var mes = event.data;
+            if (mes == "HELP") {
+                send();
+                return;
+            }
             // dbgSelectionRange("OnMessage", () => {
             updateLocalDocument($("#integration-textarea").val());
             get(mes);
             // });
+        }
+
+        ws.onopen = function(event) {
+            ws.send("HELP");
         }
 
         $("#integration-textarea").on("input", debounce(function (event) {
